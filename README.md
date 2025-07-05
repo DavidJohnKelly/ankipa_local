@@ -56,6 +56,6 @@ Also it has an updater that automatically will add new languages options when it
 
 ## Results
 
-After clicking on `Save` button, in few seconds a popup screen will appear showing details about your pornunciation. It shows the percentage scores for accuracy, fluency and overall pronunciation , the amount of errors you committed and what words your pronounced correctly. When you hover your mouse in the words you can see details about the phonemes. The result screen looks like this:
+After clicking on `Save` button, in few seconds a popup screen will appear showing details about your pronunciation. It shows the percentage scores for accuracy, fluency and overall pronunciation , the amount of errors you committed and what words your pronounced correctly. When you hover your mouse in the words you can see details about the phonemes. The result screen looks like this:
 
 <img src="https://i.imgur.com/EFCk9Vs.png">
