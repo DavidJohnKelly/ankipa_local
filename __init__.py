@@ -284,14 +284,14 @@ class AnkiPADialog(QDialog):
         about_edit.setReadOnly(True)
         about_edit.setFont(font_body)
 
-        buttons = QDialogButtonBox() 
+        buttons = QDialogButtonBox()
         contact_btn = QPushButton("Contact author")
         contact_btn.clicked.connect(
             lambda: QDesktopServices.openUrl(QUrl("https://github.com/warleysr/ankipa"))
         )
         buttons.addButton("Ok", QDialogButtonBox.ButtonRole.AcceptRole)
-        buttons.addButton(contact_btn, QDialogButtonBox.ButtonRole.ActionRole) 
-        buttons.accepted.connect(dialog.accept)      
+        buttons.addButton(contact_btn, QDialogButtonBox.ButtonRole.ActionRole)
+        buttons.accepted.connect(dialog.accept)
 
         layout = QVBoxLayout()
         layout.addLayout(hbox)
@@ -407,6 +407,16 @@ class SettingsDialog(QDialog):
             True if app_settings.value("sound-effects", "False") == "True" else False
         )
 
+        # Text extraction preference
+        self.extraction_label = QLabel("Text extraction method:")
+        self.extraction_combo = QComboBox()
+        self.extraction_combo.addItems(["Auto (DOM first, then fields)", "DOM only", "Fields only"])
+
+        extraction_methods = ["auto", "dom", "fields"]
+        curr_extraction = app_settings.value("extraction-method", defaultValue="auto")
+        if curr_extraction in extraction_methods:
+            self.extraction_combo.setCurrentIndex(extraction_methods.index(curr_extraction))
+
         # Add elements to base layout
         self.base_layout.addWidget(self.api_label)
         self.base_layout.addWidget(self.key_label)
@@ -424,6 +434,8 @@ class SettingsDialog(QDialog):
         self.base_layout.addWidget(self.shortcut_label)
         self.base_layout.addLayout(self.shortcut_box)
         self.base_layout.addWidget(self.sound_effects_check)
+        self.base_layout.addWidget(self.extraction_label)
+        self.base_layout.addWidget(self.extraction_combo)
         self.base_layout.addWidget(self.button_box)
 
         self.setLayout(self.base_layout)
@@ -442,6 +454,11 @@ class SettingsDialog(QDialog):
 
         app_settings.setValue(
             "sound-effects", str(self.sound_effects_check.isChecked())
+        )
+
+        extraction_methods = ["auto", "dom", "fields"]
+        app_settings.setValue(
+            "extraction-method", extraction_methods[self.extraction_combo.currentIndex()]
         )
 
         super(SettingsDialog, self).accept()
@@ -464,9 +481,10 @@ def start_assessment():
 def on_webview_will_set_content(web_content: WebContent, _):
     addon_package = mw.addonManager.addonFromModule(__name__)
     web_content.js.append(f"/_addons/{addon_package}/chart/chart.js")
+    web_content.js.append(f"/_addons/{addon_package}/bridge.js")
 
 
-mw.addonManager.setWebExports(__name__, r"chart/.*(css|js)")
+mw.addonManager.setWebExports(__name__, r"(chart/.*(css|js)|bridge\.js)")
 gui_hooks.webview_will_set_content.append(on_webview_will_set_content)
 
 gui_hooks.av_player_did_end_playing.append(lambda _: set_audio_speed(1.0))
