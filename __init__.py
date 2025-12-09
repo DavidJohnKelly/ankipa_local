@@ -417,6 +417,13 @@ class SettingsDialog(QDialog):
         if curr_extraction in extraction_methods:
             self.extraction_combo.setCurrentIndex(extraction_methods.index(curr_extraction))
 
+        # CSS selectors for DOM extraction
+        self.selectors_label = QLabel("CSS selectors for DOM extraction:")
+        self.selectors_text = QLineEdit()
+        default_selectors = "#sentences-inner .fr, .sentence.fr, .fr.sentence, [data-sentence], .example-sentence"
+        self.selectors_text.setText(app_settings.value("dom-selectors", defaultValue=default_selectors))
+        self.selectors_text.setPlaceholderText("#sentences-inner .fr, .sentence")
+
         # Add elements to base layout
         self.base_layout.addWidget(self.api_label)
         self.base_layout.addWidget(self.key_label)
@@ -436,6 +443,8 @@ class SettingsDialog(QDialog):
         self.base_layout.addWidget(self.sound_effects_check)
         self.base_layout.addWidget(self.extraction_label)
         self.base_layout.addWidget(self.extraction_combo)
+        self.base_layout.addWidget(self.selectors_label)
+        self.base_layout.addWidget(self.selectors_text)
         self.base_layout.addWidget(self.button_box)
 
         self.setLayout(self.base_layout)
@@ -460,6 +469,8 @@ class SettingsDialog(QDialog):
         app_settings.setValue(
             "extraction-method", extraction_methods[self.extraction_combo.currentIndex()]
         )
+
+        app_settings.setValue("dom-selectors", self.selectors_text.text())
 
         super(SettingsDialog, self).accept()
 

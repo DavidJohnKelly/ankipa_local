@@ -38,19 +38,29 @@
         return text;
     }
 
+    window.ankipaCustomSelectors = null;
+
+    window.ankipaSetSelectors = function(selectorsString) {
+        if (selectorsString && typeof selectorsString === 'string') {
+            window.ankipaCustomSelectors = selectorsString.split(',').map(s => s.trim()).filter(s => s);
+        }
+    };
+
     window.ankipaGetVisibleText = function() {
         let text = window.ankipaGetCurrentSentence();
         if (text) {
             return text;
         }
 
-        const selectors = [
+        const defaultSelectors = [
             '#sentences-inner .fr',
             '.sentence.fr',
             '.fr.sentence',
             '[data-sentence]',
             '.example-sentence'
         ];
+
+        const selectors = window.ankipaCustomSelectors || defaultSelectors;
 
         for (const selector of selectors) {
             const element = document.querySelector(selector);

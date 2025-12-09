@@ -41,6 +41,11 @@ class AnkiPA:
 
         if extraction_method in ["auto", "dom"]:
             try:
+                default_selectors = "#sentences-inner .fr, .sentence.fr, .fr.sentence, [data-sentence], .example-sentence"
+                selectors = app_settings.value("dom-selectors", defaultValue=default_selectors)
+
+                mw.reviewer.web.eval(f"window.ankipaSetSelectors ? window.ankipaSetSelectors({json.dumps(selectors)}) : null")
+
                 def on_js_result(result):
                     nonlocal to_read, dom_text_extracted
                     if result and isinstance(result, str) and result.strip():

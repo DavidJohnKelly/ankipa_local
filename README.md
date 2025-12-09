@@ -33,6 +33,11 @@ In the settings besides the API configs you will find some other options:
 - **Phoneme system:** only for en-US/GB, it defines how the syllables will be shown
 - **Shortcut:** your preferred shortcut to start recording your voice
 - **Enable sound effect:** sounds based on pronunciation score
+- **Text extraction method:** Choose how AnkiPA extracts text from your cards:
+  - **Auto (DOM first, then fields):** Tries to extract visible text from the card DOM first, falls back to field extraction
+  - **DOM only:** Only uses DOM extraction (useful for cards with dynamic/rotating content)
+  - **Fields only:** Traditional field-based extraction (default behavior)
+- **CSS selectors for DOM extraction:** Comma-separated CSS selectors to find text in the card DOM. Useful for custom card templates. Default: `#sentences-inner .fr, .sentence.fr, .fr.sentence, [data-sentence], .example-sentence`
 
 ## Testing key
 If you're just taking a look and don't want to have the work of creating your own key, try using this:
