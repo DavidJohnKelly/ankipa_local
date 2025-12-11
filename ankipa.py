@@ -35,24 +35,57 @@ class AnkiPA:
     def test_pronunciation(cls):
         from . import app_settings
 
-        field_names = mw.col.models.fieldNames(mw.reviewer.card.note().model())
-        fields: str = app_settings.value("fields")
-        field_to_use = field_names[0]
+        to_read = None
+        dom_text_extracted = False
+        extraction_method = app_settings.value("extraction-method", defaultValue="auto")
 
-        if fields is not None:
-            fields = fields.replace(" ", "").split(",")
-            for field in fields:
-                if field in field_names:
-                    field_to_use = field
-                    break
+        if extraction_method in ["auto", "dom"]:
+            try:
+                default_selectors = "#sentences-inner .fr, .sentence.fr, .fr.sentence, [data-sentence], .example-sentence"
+                selectors = app_settings.value("dom-selectors", defaultValue=default_selectors)
 
-        to_read = mw.reviewer.card.note()[field_to_use]
+                mw.reviewer.web.eval(f"window.ankipaSetSelectors ? window.ankipaSetSelectors({json.dumps(selectors)}) : null")
 
-        # Remove html tags
-        to_read = re.sub(REMOVE_HTML_RE, " ", to_read).replace("&nbsp;", "")
+                def on_js_result(result):
+                    nonlocal to_read, dom_text_extracted
+                    if result and isinstance(result, str) and result.strip():
+                        to_read = result.strip()
+                        dom_text_extracted = True
 
-        # Remove addons tags
-        to_read = re.sub(REMOVE_TAG_RE, "", to_read).strip()
+                mw.reviewer.web.evalWithCallback(
+                    "window.ankipaGetVisibleText ? window.ankipaGetVisibleText() : null",
+                    on_js_result
+                )
+
+                import time
+                max_wait = 0.2
+                start = time.time()
+                while not dom_text_extracted and (time.time() - start) < max_wait:
+                    mw.app.processEvents()
+                    time.sleep(0.01)
+
+                if dom_text_extracted:
+                    mw.reviewer.web.eval("window.ankipaHighlightText ? window.ankipaHighlightText() : null")
+            except:
+                pass
+
+        if not to_read and extraction_method != "dom":
+            field_names = mw.col.models.fieldNames(mw.reviewer.card.note().model())
+            fields: str = app_settings.value("fields")
+            field_to_use = field_names[0]
+
+            if fields is not None:
+                fields = fields.replace(" ", "").split(",")
+                for field in fields:
+                    if field in field_names:
+                        field_to_use = field
+                        break
+
+            to_read = mw.reviewer.card.note()[field_to_use]
+
+            to_read = re.sub(REMOVE_HTML_RE, " ", to_read).replace("&nbsp;", "")
+
+            to_read = re.sub(REMOVE_TAG_RE, "", to_read).strip()
 
         cls.REFTEXT = to_read
 
@@ -67,6 +100,7 @@ class AnkiPA:
     @classmethod
     def after_record(cls, recorded_voice):
         if not recorded_voice:
+            mw.reviewer.web.eval("window.ankipaRemoveHighlight ? window.ankipaRemoveHighlight() : null")
             return
 
         elapsed = cls.DIAG._recorder.duration() - 0.5
@@ -89,6 +123,7 @@ class AnkiPA:
         key = app_settings.value("key")
         if not all((region, language, key)):
             showInfo("Please configure your Azure service properly.")
+            mw.reviewer.web.eval("window.ankipaRemoveHighlight ? window.ankipaRemoveHighlight() : null")
             return
 
         # Perform pronunciation assessment
@@ -113,6 +148,7 @@ class AnkiPA:
 
         if cls.RESULT is None or t.is_alive():
             cls.RESULT = None
+            mw.reviewer.web.eval("window.ankipaRemoveHighlight ? window.ankipaRemoveHighlight() : null")
             showInfo(
                 "There was a <b>network error</b> recognizing your speech.<br><br>"
                 + "<b>&#x2022;</b> Check if your API credentials are correct.<br><br>"
@@ -127,7 +163,8 @@ class AnkiPA:
         if cls.RESULT["RecognitionStatus"] != "Success":
             from . import addon
 
-            # Save file for debug
+            mw.reviewer.web.eval("window.ankipaRemoveHighlight ? window.ankipaRemoveHighlight() : null")
+
             with open(os.path.join(addon, "debug.json"), "w+") as fp:
                 data = {}
                 data["language"] = lang
@@ -210,6 +247,8 @@ class AnkiPA:
         html = html.replace("[INSERTIONS]", str(errors["Insertion"]))
 
         cls.RESULT = None
+
+        mw.reviewer.web.eval("window.ankipaRemoveHighlight ? window.ankipaRemoveHighlight() : null")
 
         widget = ResultsDialog(html, pronunciation)
         widget.setWindowModality(Qt.WindowModality.NonModal)
