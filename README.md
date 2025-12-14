@@ -39,13 +39,6 @@ In the settings besides the API configs you will find some other options:
   - **Fields only:** Traditional field-based extraction (default behavior)
 - **CSS selectors for DOM extraction:** Comma-separated CSS selectors to find text in the card DOM. Useful for custom card templates. Default: `#sentences-inner .fr, .sentence.fr, .fr.sentence, [data-sentence], .example-sentence`
 
-## Testing key
-If you're just taking a look and don't want to have the work of creating your own key, try using this:
-
-**Key**: `81b697c9e57541df80443da5caa8e01d`
-
-**Region**: `centralus`
-
 ## Supported languages
 AnkiPA relies on <b>Azure Pronunciation Assessment</b>, which supports multiple languages and different accents for English, Spanish and French.   
 
