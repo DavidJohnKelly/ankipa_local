@@ -7,8 +7,8 @@ import json
 import re
 import os
 
-REMOVE_HTML_RE = re.compile("<[^<]+?>")
-REMOVE_TAG_RE = re.compile("\[[^\]]+\]")
+REMOVE_HTML_RE = re.compile(r"<[^<]+?>")
+REMOVE_TAG_RE = re.compile(r"\[[^\]]+\]")
 WORD_HTML = """
 <h2 class="word tooltip [ERROR]">
 [WORD]
@@ -70,13 +70,23 @@ class AnkiPA:
                 pass
 
         if not to_read and extraction_method != "dom":
-            field_names = mw.col.models.fieldNames(mw.reviewer.card.note().model())
+            if mw.col is None:
+                print("Error: mw.col is None")
+                return
+            if mw.reviewer.card is None:
+                print("Error: mw.reviewer.card is None")
+                return
+            notetype = mw.reviewer.card.note().note_type()
+            if notetype is None:
+                print("Error: notetype is None")
+                return
+            field_names = mw.col.models.field_names(notetype)
             fields: str = app_settings.value("fields")
             field_to_use = field_names[0]
 
             if fields is not None:
-                fields = fields.replace(" ", "").split(",")
-                for field in fields:
+                fields_list = fields.replace(" ", "").split(",")
+                for field in fields_list:
                     if field in field_names:
                         field_to_use = field
                         break
@@ -89,6 +99,9 @@ class AnkiPA:
 
         cls.REFTEXT = to_read
 
+        if mw.reviewer.card is None:
+            print("Error: mw.reviewer.card is None")
+            return
         cid = mw.reviewer.card.id
         if cls.LAST_TTS != cid:
             cls.TTS_GEN = None
@@ -101,6 +114,10 @@ class AnkiPA:
     def after_record(cls, recorded_voice):
         if not recorded_voice:
             mw.reviewer.web.eval("window.ankipaRemoveHighlight ? window.ankipaRemoveHighlight() : null")
+            return
+
+        if cls.DIAG is None:
+            print("Error: AnkiPA.DIAG is None")
             return
 
         elapsed = cls.DIAG._recorder.duration() - 0.5
@@ -199,7 +216,10 @@ class AnkiPA:
         update_avg_stat("avg_fluency", fluency, assessments)
         update_avg_stat("avg_pronunciation", pronunciation, assessments)
 
-        update_stat("words", len(scores["Words"]))
+        words_list = scores.get("Words", [])
+        if not isinstance(words_list, list):
+            words_list = []
+        update_stat("words", len(words_list))
         save_stats()
 
         # Replace percentages in template
@@ -215,7 +235,7 @@ class AnkiPA:
         errors = {"Mispronunciation": 0, "Omission": 0, "Insertion": 0}
 
         words_html = ""
-        for word in scores["Words"]:
+        for word in words_list:
             syllables = ""
             if "Syllables" in word:
                 syllable_count = len(word["Syllables"])
