@@ -25,11 +25,8 @@ data_file = os.path.join(addon, "azure_data.json")
 with open(data_file, "r") as fp:
     data = json.load(fp)
 
-fp.close()
-
 # Load HTML template
-with open(os.path.join(addon, "template.html"), "r") as ft:
-    html_template = ft.read()
+html_template = load_template("template.html")
 
 # Load statistics
 load_stats(addon)
@@ -256,7 +253,7 @@ class AnkiPADialog(QDialog):
 
         about = load_template("about.html")
         about_edit = QTextEdit()
-        about_edit.setPlainText(about)
+        about_edit.setHtml(about)
         about_edit.setReadOnly(True)
         about_edit.setFont(font_body)
 

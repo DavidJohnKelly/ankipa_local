@@ -6,9 +6,9 @@ TEMPLATES_DIR = Path(__file__).resolve().parent
 
 @lru_cache()
 def load_template(name: str) -> str:
-    p = TEMPLATES_DIR / name
+    path = TEMPLATES_DIR / name
     try:
-        return p.read_text(encoding="utf-8")
+        return path.read_text(encoding="utf-8")
     except FileNotFoundError:
-        print(f"Template not found: {p}")
+        print(f"Template not found: {path}")
         return ""

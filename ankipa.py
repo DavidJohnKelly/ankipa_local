@@ -2,7 +2,6 @@ from aqt.sound import RecordDialog
 from typing import Optional
 from aqt import mw
 from aqt.qt import Qt
-from aqt.sound import RecordDialog
 from .stats import get_stat, update_stat, update_avg_stat, save_stats
 from .templates.loader import load_template
 import threading
