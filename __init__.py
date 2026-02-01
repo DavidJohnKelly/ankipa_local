@@ -1,7 +1,7 @@
 from aqt import mw, gui_hooks
 from aqt.webview import AnkiWebView, WebContent
 from aqt.utils import showInfo
-from aqt.qt import *
+from aqt.qt import QSettings, QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QSlider, Qt, QLabel, QDialogButtonBox, QFont, QLineEdit, QComboBox, QSpinBox, QCheckBox, QShortcut, QKeySequence, QAction, QDesktopServices, QUrl, QTextEdit, QWidget, QSize, QIcon, QPixmap
 from aqt.sound import play, MpvManager, av_player
 from .tts import TTS
 from .ankipa import AnkiPA
@@ -11,7 +11,6 @@ import shutil
 import json
 import os
 from .stats import load_stats
-from .updater import update_available_languages
 
 
 SETTINGS_ORGANIZATION = "github_warleysr"
@@ -24,21 +23,6 @@ addon = os.path.dirname(os.path.abspath(__file__))
 data_file = os.path.join(addon, "azure_data.json")
 with open(data_file, "r") as fp:
     data = json.load(fp)
-
-# Update languages
-new_languages = update_available_languages(data["languages"])
-if new_languages:
-    with open(data_file, "w") as fp:
-        json.dump(data, fp, indent=4)
-    from . import showInfo
-
-    update_message = (
-        f"<h3>AnkiPA Update</h3><br> These {len(new_languages)} new languages "
-        "was added to the addon:<br><br>"
-    )
-    for lang in new_languages:
-        update_message += f"&#x2022; {lang}<br>"
-    showInfo(update_message)
 
 fp.close()
 
@@ -127,7 +111,8 @@ class ResultsDialog(QDialog):
 
     def replay_voice(self):
         self.update_audio_speed()
-        play(AnkiPA.RECORDED)
+        if AnkiPA.RECORDED is not None:
+            play(AnkiPA.RECORDED)
 
 
     def replay_tts(self):

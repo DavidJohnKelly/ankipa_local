@@ -1,4 +1,5 @@
 from aqt.sound import RecordDialog
+from typing import Optional, Any
 from aqt import mw
 from aqt.qt import Qt
 from .stats import *
@@ -24,12 +25,12 @@ WORD_HTML = """
 
 class AnkiPA:
 
-    REFTEXT = None
-    RECORDED = None
-    TTS_GEN = None
-    LAST_TTS = None
-    RESULT = None
-    DIAG = None
+    REFTEXT: Optional[str] = None
+    RECORDED: Optional[str] = None
+    TTS_GEN: Optional[str] = None
+    LAST_TTS: Optional[int] = None
+    RESULT: Optional[dict] = None
+    DIAG: Optional[Any] = None
 
     @classmethod
     def test_pronunciation(cls):
