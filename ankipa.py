@@ -1,8 +1,10 @@
 from aqt.sound import RecordDialog
-from typing import Optional, Any
+from typing import Optional
 from aqt import mw
 from aqt.qt import Qt
-from .stats import *
+from aqt.sound import RecordDialog
+from .stats import get_stat, update_stat, update_avg_stat, save_stats
+from .templates.loader import load_template
 import threading
 import json
 import re
@@ -10,18 +12,7 @@ import os
 
 REMOVE_HTML_RE = re.compile(r"<[^<]+?>")
 REMOVE_TAG_RE = re.compile(r"\[[^\]]+\]")
-WORD_HTML = """
-<h2 class="word tooltip [ERROR]">
-[WORD]
-<div class="bottom" style="min-width: 100px;">
-    <p style="font-weight: bold;">[ERROR-INFO]</p>
-    <u>[WORD]</u>
-    <p>[SYLLABLES]</p>
-    <i></i>
-</div>
-</h2>
-"""
-
+WORD_HTML: str = load_template("word.html")
 
 class AnkiPA:
 
@@ -30,7 +21,7 @@ class AnkiPA:
     TTS_GEN: Optional[str] = None
     LAST_TTS: Optional[int] = None
     RESULT: Optional[dict] = None
-    DIAG: Optional[Any] = None
+    DIAG: Optional[RecordDialog] = None
 
     @classmethod
     def test_pronunciation(cls):
@@ -112,7 +103,7 @@ class AnkiPA:
         cls.DIAG = RecordDialog(mw, mw, cls.after_record)
 
     @classmethod
-    def after_record(cls, recorded_voice):
+    def after_record(cls, recorded_voice: Optional[str]) -> None:
         if not recorded_voice:
             mw.reviewer.web.eval("window.ankipaRemoveHighlight ? window.ankipaRemoveHighlight() : null")
             return
@@ -167,14 +158,9 @@ class AnkiPA:
         if cls.RESULT is None or t.is_alive():
             cls.RESULT = None
             mw.reviewer.web.eval("window.ankipaRemoveHighlight ? window.ankipaRemoveHighlight() : null")
+            network_error_html = load_template("network_error.html")
             showInfo(
-                "There was a <b>network error</b> recognizing your speech.<br><br>"
-                + "<b>&#x2022;</b> Check if your API credentials are correct.<br><br>"
-                + "<b>&#x2022;</b> Verify if your internet connection is working properly.<br><br>"
-                + "<b>&#x2022;</b> Try to increase the <b>Timeout</b> parameter in  "
-                + "Settings.<br><br>"
-                + "<b>&#x2022;</b> Also check Azure Speech services status in your region: "
-                + "<a href='https://status.azure.com/en-gb/status'>status.azure.com/en-gb/status</a>"
+                network_error_html
             )
             return
 
@@ -191,15 +177,9 @@ class AnkiPA:
                 data["response"] = cls.RESULT
                 json.dump(data, fp, indent=4)
 
+            service_error_html = load_template("service_error.html")
             showInfo(
-                "There was a <b>service error</b> recognizing your speech.<br><br>"
-                + "<b>&#x2022;</b> Check if your microphone is working well "
-                + "and recording clearly.<br><br>"
-                + "<b>&#x2022;</b> Make sure the text that you are pronuncing is in the "
-                + "correct field and configured language. Take a look at the Settings.<br><br>"
-                + "<b>&#x2022;</b> Check <b>debug.json</b> file in your addon's folder "
-                + "and contact me on GitHub if you need help: "
-                + "<a href='https://github.com/warleysr/ankipa'>github.com/warleysr/ankipa</a>"
+                service_error_html
             )
             return
 

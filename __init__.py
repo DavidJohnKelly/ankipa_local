@@ -11,6 +11,7 @@ import shutil
 import json
 import os
 from .stats import load_stats
+from .templates.loader import load_template
 
 
 SETTINGS_ORGANIZATION = "github_warleysr"
@@ -253,17 +254,7 @@ class AnkiPADialog(QDialog):
         hbox.addWidget(icon_label)
         hbox.addWidget(ankipa_label)
 
-        about = (
-            "AnkiPA is an addon that helps you practice your pronunciation. Your voice is recorded "
-            "and compared to the reference text to evaluate the pronunciation. Within seconds you "
-            "receive an overview containing accuracy, fluency and pronunciation score and which words "
-            "you pronounced correctly and what mistakes you commited.\n\n"
-            "It uses Microsoft Azure Speech services to provide the assessment results. Your voice "
-            "is sent to their servers and if you play TTS the audio data is retrieved. Besides that AnkiPA "
-            "doesn't make any other internet connection. It's recommended to create your own API key in "
-            "the closest available region to faster evaluations.\n\n"
-            "If you find a bug or need help reach me out by opening an issue on GitHub."
-        )
+        about = load_template("about.html")
         about_edit = QTextEdit()
         about_edit.setPlainText(about)
         about_edit.setReadOnly(True)
