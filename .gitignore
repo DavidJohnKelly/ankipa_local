@@ -59,3 +59,4 @@ src/testTestingRootWkspc/coverageWorkspace/.coverage
 models/
 vendor/
 nltk_data/
+stats.json
