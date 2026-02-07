@@ -3,8 +3,7 @@ from aqt.webview import AnkiWebView, WebContent
 from aqt.utils import showInfo
 from aqt.qt import QSettings, QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QSlider, Qt, QLabel, QDialogButtonBox, QFont, QLineEdit, QComboBox, QSpinBox, QCheckBox, QShortcut, QKeySequence, QAction, QDesktopServices, QUrl, QTextEdit, QWidget, QSize, QIcon, QPixmap
 from aqt.sound import play, MpvManager, av_player
-from .tts import TTS
-from .ankipa import AnkiPA
+
 import tempfile
 import time
 import shutil
@@ -19,6 +18,9 @@ VENDOR_DIR = os.path.join(ADDON_DIR, "vendor")
 
 if VENDOR_DIR not in sys.path:
     sys.path.insert(0, VENDOR_DIR)
+
+from .tts import TTS
+from .ankipa import AnkiPA
 
 import nltk
 from .stats import load_stats, stats
@@ -134,13 +136,10 @@ class ResultsDialog(QDialog):
     def replay_tts(self):
         self.update_audio_speed()
         if AnkiPA.TTS_GEN is None:
-            region = app_settings.value("region")
-            language = app_settings.value("language")
-            key = app_settings.value("key")
-            voice = data["languages"][language][1]
+            # Generate TTS audio using the updated pyttsx3-only function
+            generated = TTS.gen_tts_audio(text=AnkiPA.REFTEXT)
 
-            generated = TTS.gen_tts_audio(region, key, voice, AnkiPA.REFTEXT)
-            if generated is None:
+            if not generated:
                 showInfo("There was an error generating the TTS audio.")
                 return
 

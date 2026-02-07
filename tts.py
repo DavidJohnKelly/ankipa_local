@@ -1,36 +1,54 @@
-import requests
-import tempfile
+# tts.py
 import os
+import tempfile
+import pyttsx3
+
+from typing import Optional
 
 
 class TTS:
     @classmethod
-    def gen_tts_audio(cls, region, key, voice_code, text):
-        ssml = (
-            "<speak version='1.0' xml:lang='en-US'>"
-            + f"<voice name='{voice_code}' style='default'>"
-            + f"{text}</voice></speak>"
-        )
+    def gen_tts_audio(cls, text: Optional[str]) -> str:
+        """
+        Generate TTS audio offline using pyttsx3.
+        Ignores any Azure parameters.
 
-        req = requests.post(
-            "https://%s.tts.speech.microsoft.com/cognitiveservices/v1" % region,
-            headers={
-                "Content-Type": "application/ssml+xml",
-                "X-Microsoft-OutputFormat": "audio-16khz-128kbitrate-mono-mp3",
-                "Ocp-Apim-Subscription-Key": key,
-            },
-            data=ssml.encode("utf-8"),
-        )
+        Args:
+            voice_code: Optional substring of the voice ID to select a specific voice.
+            text: The text to convert to speech.
 
-        if req.status_code != 200:
-            return None
+        Returns:
+            Path to the generated WAV file.
+        """
+        if not text:
+            raise ValueError("No text provided for TTS generation.")
 
-        tmpdir = tempfile.gettempdir() + os.sep + "ankipa"
+        # Prepare temporary directory
+        tmpdir = os.path.join(tempfile.gettempdir(), "ankipa")
         os.makedirs(tmpdir, exist_ok=True)
+        tmp_path = os.path.join(tmpdir, "tts_output.wav")
 
-        _, name = tempfile.mkstemp(suffix=".mp3", dir=tmpdir)
+        # Initialize TTS engine
+        engine = pyttsx3.init()
 
-        with open(name, "wb") as fp:
-            fp.write(bytearray(req.content))
+        # Get voices safely
+        voices = list(engine.getProperty("voices") or [])
+        # Get first English voice if available, otherwise use default
+        voice_code = next((v.id for v in voices if "en" in v.id.lower()), voices[0].id)
 
-        return name
+        if voice_code:
+            matched = False
+            for voice in voices:
+                if voice_code.lower() in voice.id.lower():
+                    engine.setProperty("voice", voice.id)
+                    matched = True
+                    break
+            if not matched:
+                print(f"Voice '{voice_code}' not found. Using default voice.")
+
+        # Save audio to file
+        engine.save_to_file(text, tmp_path)
+        engine.runAndWait()
+        engine.stop()
+
+        return tmp_path

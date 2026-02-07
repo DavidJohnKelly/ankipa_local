@@ -58,7 +58,7 @@ def _tokenize(text: str):
     ]
 
 
-def pron_assess(_region, _lang, _key, reference_text, recorded_voice, phoneme_system, _timeout):
+def pron_assess(reference_text, recorded_voice):
     """
     Local pronunciation assessment (Vosk + g2p_en + rapidfuzz).
     Azure parameters are ignored but kept for compatibility.
