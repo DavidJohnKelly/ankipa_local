@@ -10,9 +10,27 @@ import time
 import shutil
 import json
 import os
-from .stats import load_stats
+import sys
+import platform
+
+# Add vendor directory to path BEFORE importing nltk
+ADDON_DIR = os.path.dirname(__file__)
+VENDOR_DIR = os.path.join(ADDON_DIR, "vendor")
+
+if VENDOR_DIR not in sys.path:
+    sys.path.insert(0, VENDOR_DIR)
+
+import nltk
+from .stats import load_stats, stats
 from .templates.loader import load_template
 
+print("Python version:", sys.version)
+print("Python version info:", sys.version_info)
+print("Platform:", platform.platform())
+print("Architecture:", platform.architecture())
+
+NLTK_DATA = os.path.join(ADDON_DIR, "nltk_data")
+nltk.data.path.insert(0, NLTK_DATA)
 
 SETTINGS_ORGANIZATION = "github_warleysr"
 SETTINGS_APPLICATION = "ankipa"

@@ -55,3 +55,7 @@ python_files/tests/*/.data/*/.coverage*
 src/testTestingRootWkspc/coverageWorkspace/.coverage
 *.txt
 *.bat
+*.original
+models/
+vendor/
+nltk_data/

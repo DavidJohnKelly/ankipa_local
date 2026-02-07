@@ -118,7 +118,6 @@ class AnkiPA:
 
         from . import (
             app_settings,
-            data,
             html_template,
             showInfo,
             get_color,
@@ -126,25 +125,21 @@ class AnkiPA:
         )
         from .pronunciation import pron_assess
 
-        region = app_settings.value("region")
         language = app_settings.value("language")
-        key = app_settings.value("key")
-        if not all((region, language, key)):
-            showInfo("Please configure your Azure service properly.")
+        if not language:
+            showInfo("Please set a language in AnkiPA Settings.")
             mw.reviewer.web.eval("window.ankipaRemoveHighlight ? window.ankipaRemoveHighlight() : null")
             return
 
-        # Perform pronunciation assessment
-        lang = data["languages"][language][0]
         phoneme_system = app_settings.value("phoneme-system", defaultValue="IPA")
         timeout = int(app_settings.value("timeout", defaultValue=5))
 
         t = threading.Thread(
             target=pron_assess,
             args=(
-                region,
-                lang,
-                key,
+                None,
+                language,
+                None,
                 cls.REFTEXT,
                 recorded_voice,
                 phoneme_system,
