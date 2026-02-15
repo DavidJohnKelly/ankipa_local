@@ -1,7 +1,7 @@
 from aqt import mw, gui_hooks
 from aqt.webview import AnkiWebView, WebContent
 from aqt.utils import showInfo
-from aqt.qt import QSettings, QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QSlider, Qt, QLabel, QDialogButtonBox, QFont, QLineEdit, QComboBox, QSpinBox, QCheckBox, QShortcut, QKeySequence, QAction, QDesktopServices, QUrl, QTextEdit, QWidget, QSize, QIcon, QPixmap
+from aqt.qt import QSettings, QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QSlider, Qt, QLabel, QDialogButtonBox, QFont, QShortcut, QKeySequence, QAction, QDesktopServices, QUrl, QTextEdit, QWidget, QSize, QIcon, QPixmap
 from aqt.sound import play, MpvManager, av_player
 
 import tempfile
@@ -12,9 +12,13 @@ import os
 import sys
 import platform
 
-# Add vendor directory to path BEFORE importing nltk
+# Add vendor directory to path
 ADDON_DIR = os.path.dirname(__file__)
 VENDOR_DIR = os.path.join(ADDON_DIR, "vendor")
+
+_FONT_HEADER = QFont()
+_FONT_HEADER.setPointSize(12)
+_FONT_HEADER.setBold(True)
 
 if VENDOR_DIR not in sys.path:
     sys.path.insert(0, VENDOR_DIR)
@@ -26,29 +30,16 @@ import nltk
 from .stats import load_stats, stats
 from .templates.loader import load_template
 
-print("Python version:", sys.version)
-print("Python version info:", sys.version_info)
-print("Platform:", platform.platform())
-print("Architecture:", platform.architecture())
-
 NLTK_DATA = os.path.join(ADDON_DIR, "nltk_data")
 nltk.data.path.insert(0, NLTK_DATA)
 
-SETTINGS_ORGANIZATION = "github_warleysr"
-SETTINGS_APPLICATION = "ankipa"
+SETTINGS_ORGANIZATION = "github_davidjohnkelly"
+SETTINGS_APPLICATION = "ankipa_local"
 
 app_settings = QSettings(SETTINGS_ORGANIZATION, SETTINGS_APPLICATION)
 
-# Load Azure API data
-addon = os.path.dirname(os.path.abspath(__file__))
-data_file = os.path.join(addon, "azure_data.json")
-with open(data_file, "r") as fp:
-    data = json.load(fp)
-
-# Load HTML template
-html_template = load_template("template.html")
-
 # Load statistics
+addon = os.path.dirname(os.path.abspath(__file__))
 load_stats(addon)
 
 # Remove temporary files
@@ -162,15 +153,7 @@ class AnkiPADialog(QDialog):
         # AnkiPA label
         self.ankipa_label = QLabel("AnkiPA Options")
         self.ankipa_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.ankipa_label.setFont(SettingsDialog._FONT_HEADER)
-
-        # Settings
-        self.settings_btn = QPushButton("Settings", self)
-        self.settings_btn.clicked.connect(self.settings_dialog)
-        self.settings_btn.setIcon(
-            QIcon(os.path.join(addon, f"icons{os.sep}settings.png"))
-        )
-        self.settings_btn.setIconSize(QSize(32, 32))
+        self.ankipa_label.setFont(_FONT_HEADER)
 
         # Statistics
         self.statistics_btn = QPushButton("Statistics", self)
@@ -187,16 +170,12 @@ class AnkiPADialog(QDialog):
         self.about_btn.setIconSize(QSize(32, 32))
 
         self.base_layout.addWidget(self.ankipa_label)
-        self.base_layout.addWidget(self.settings_btn)
         self.base_layout.addWidget(self.statistics_btn)
         self.base_layout.addWidget(self.about_btn)
 
         self.setLayout(self.base_layout)
 
         self.setMinimumWidth(180)
-
-    def settings_dialog(self):
-        SettingsDialog(mw).show()
 
     def statistics_dialog(self):
         html = ""
@@ -308,164 +287,6 @@ class StatisticsDialog(QDialog):
         self.resize(1024, 720)
 
         self.setLayout(vbox)
-
-
-class SettingsDialog(QDialog):
-    _FONT_HEADER = QFont()
-    _FONT_HEADER.setPointSize(12)
-    _FONT_HEADER.setBold(True)
-
-    def __init__(self, *args, **kwargs):
-        super(SettingsDialog, self).__init__(*args, **kwargs)
-        mw.garbage_collect_on_dialog_finish(self)
-        self.setWindowTitle("AnkiPA Settings")
-
-        self.base_layout = QVBoxLayout()
-
-        self.button_box = QDialogButtonBox()
-        self.button_box.addButton("Ok", QDialogButtonBox.ButtonRole.AcceptRole)
-        self.button_box.addButton("Cancel", QDialogButtonBox.ButtonRole.RejectRole)
-        self.button_box.accepted.connect(self.accept)
-        self.button_box.rejected.connect(self.reject)
-
-        self.api_label = QLabel("Configure your AnkiPA addon")
-        self.api_label.setFont(self._FONT_HEADER)
-
-        # Key input
-        self.key_label = QLabel("Azure API key:")
-        self.key_field = QLineEdit()
-        self.key_field.setText(app_settings.value("key"))
-
-        # Region options
-        self.region_label = QLabel("Region:")
-        self.region_combo = QComboBox()
-        self.region_combo.addItems(data["regions"])
-
-        curr_region = app_settings.value("region")
-        if curr_region is not None:
-            self.region_combo.setCurrentIndex(data["regions"].index(curr_region))
-
-        # Language options
-        self.lang_label = QLabel("Language:")
-        self.lang_combo = QComboBox()
-        langs = sorted(list(data["languages"].keys()))
-        self.lang_combo.addItems(langs)
-
-        curr_lang = app_settings.value("language")
-        if curr_lang is not None:
-            self.lang_combo.setCurrentIndex(langs.index(curr_lang))
-
-        # Fields list
-        self.fields_label = QLabel("Card fields:")
-        self.fields_text = QLineEdit()
-        self.fields_text.setText(app_settings.value("fields"))
-        self.fields_text.setPlaceholderText("front, back, other")
-
-        # Timeout
-        self.timeout_label = QLabel("Timeout:")
-        self.timeout_spin = QSpinBox()
-        timeout = int(app_settings.value("timeout", defaultValue=5))
-        self.timeout_spin.setValue(timeout)
-
-        # Phoneme system for en-us
-        phonemes = ["IPA", "SAPI"]
-
-        self.phoneme_label = QLabel("Phoneme system (only for en-US/GB):")
-        self.phoneme_combo = QComboBox()
-        self.phoneme_combo.addItems(phonemes)
-
-        curr_phoneme = app_settings.value("phoneme-system", defaultValue="IPA")
-        self.phoneme_combo.setCurrentIndex(phonemes.index(curr_phoneme))
-
-        # Shortcut
-        self.shortcut_label = QLabel("Shortcut:")
-        self.shortcut_box = QHBoxLayout()
-        self.shortcut_label_2 = QLabel("Ctrl + ")
-        self.shortcut_box.addStretch()
-        self.shortcut_field = QLineEdit()
-        self.shortcut_field.setFixedWidth(50)
-        self.shortcut_box.addWidget(self.shortcut_label_2)
-        self.shortcut_box.addWidget(self.shortcut_field)
-        self.shortcut_box.addStretch()
-
-        curr_shortcut = app_settings.value("shortcut", defaultValue="W")
-        self.shortcut_field.setText(curr_shortcut)
-
-        # Sound effects
-        self.sound_effects_check = QCheckBox("Enable sound effects on results")
-        self.sound_effects_check.setChecked(
-            True if app_settings.value("sound-effects", "False") == "True" else False
-        )
-
-        # Text extraction preference
-        self.extraction_label = QLabel("Text extraction method:")
-        self.extraction_combo = QComboBox()
-        self.extraction_combo.addItems(["Auto (DOM first, then fields)", "DOM only", "Fields only"])
-
-        extraction_methods = ["auto", "dom", "fields"]
-        curr_extraction = app_settings.value("extraction-method", defaultValue="auto")
-        if curr_extraction in extraction_methods:
-            self.extraction_combo.setCurrentIndex(extraction_methods.index(curr_extraction))
-
-        # CSS selectors for DOM extraction
-        self.selectors_label = QLabel("CSS selectors for DOM extraction:")
-        self.selectors_text = QLineEdit()
-        default_selectors = "#sentences-inner .fr, .sentence.fr, .fr.sentence, [data-sentence], .example-sentence"
-        self.selectors_text.setText(app_settings.value("dom-selectors", defaultValue=default_selectors))
-        self.selectors_text.setPlaceholderText("#sentences-inner .fr, .sentence")
-
-        # Add elements to base layout
-        self.base_layout.addWidget(self.api_label)
-        self.base_layout.addWidget(self.key_label)
-        self.base_layout.addWidget(self.key_field)
-        self.base_layout.addWidget(self.region_label)
-        self.base_layout.addWidget(self.region_combo)
-        self.base_layout.addWidget(self.lang_label)
-        self.base_layout.addWidget(self.lang_combo)
-        self.base_layout.addWidget(self.fields_label)
-        self.base_layout.addWidget(self.fields_text)
-        self.base_layout.addWidget(self.timeout_label)
-        self.base_layout.addWidget(self.timeout_spin)
-        self.base_layout.addWidget(self.phoneme_label)
-        self.base_layout.addWidget(self.phoneme_combo)
-        self.base_layout.addWidget(self.shortcut_label)
-        self.base_layout.addLayout(self.shortcut_box)
-        self.base_layout.addWidget(self.sound_effects_check)
-        self.base_layout.addWidget(self.extraction_label)
-        self.base_layout.addWidget(self.extraction_combo)
-        self.base_layout.addWidget(self.selectors_label)
-        self.base_layout.addWidget(self.selectors_text)
-        self.base_layout.addWidget(self.button_box)
-
-        self.setLayout(self.base_layout)
-
-    def accept(self):
-        app_settings.setValue("key", self.key_field.text())
-        app_settings.setValue("region", self.region_combo.currentText())
-        app_settings.setValue("language", self.lang_combo.currentText())
-        app_settings.setValue("phoneme-system", self.phoneme_combo.currentText())
-        app_settings.setValue("fields", self.fields_text.text())
-        app_settings.setValue("timeout", self.timeout_spin.value())
-
-        curr_shortcut = self.shortcut_field.text()
-        app_settings.setValue("shortcut", curr_shortcut)
-        shortcut.setKey(QKeySequence(f"Ctrl+{curr_shortcut}"))
-
-        app_settings.setValue(
-            "sound-effects", str(self.sound_effects_check.isChecked())
-        )
-
-        extraction_methods = ["auto", "dom", "fields"]
-        app_settings.setValue(
-            "extraction-method", extraction_methods[self.extraction_combo.currentIndex()]
-        )
-
-        app_settings.setValue("dom-selectors", self.selectors_text.text())
-
-        super(SettingsDialog, self).accept()
-
-    def reject(self):
-        super(SettingsDialog, self).reject()
 
 
 def main_dialog():

@@ -21,10 +21,8 @@ class AnkiPA:
     REFTEXT: Optional[str] = None
     RECORDED: Optional[str] = None
     TTS_GEN: Optional[str] = None
-    LAST_TTS: Optional[int] = None
     RESULT: Optional[dict] = None
     DIAG: Optional[RecordDialog] = None
-    LAST_TTS_LANGUAGE: str = "en_US"  # default fallback language
 
     @classmethod
     def test_pronunciation(cls):
@@ -47,6 +45,7 @@ class AnkiPA:
     def after_record(cls, recorded_voice: Optional[str]) -> None:
         """Handle recorded voice, run pronunciation assessment, update stats, and display results."""
         if not recorded_voice or not cls.REFTEXT:
+            print("Error: No recorded voice or reference text available.")
             return
 
         cls.RECORDED = recorded_voice
