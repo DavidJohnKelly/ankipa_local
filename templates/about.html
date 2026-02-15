@@ -4,11 +4,7 @@ Within seconds you receive an overview containing accuracy, fluency and
 pronunciation score and which words you pronounced correctly and what mistakes
 you commited.
 <br></br><br></br>
-It uses Microsoft Azure Speech services to provide the
-assessment results. Your voice is sent to their servers and if you play TTS the
-audio data is retrieved. Besides that, AnkiPA doesn't make any other internet
-connection. It's recommended to create your own API key in the closest available
-region to faster evaluations.
+It processes voice data locally on your machine to deliver pronunciation assessments. No data is sent to any server, ensuring your privacy and security. The addon uses the Vosk speech recognition library to transcribe your spoken words, the g2p_en library to convert the reference text into phonemes, and the rapidfuzz library to compare the phonetic representations and calculate pronunciation scores.
 <br></br><br></br>
-If you find a bug or need help reach me out by
-opening an issue on GitHub.
+If you find a bug or need help reach me out by opening an issue on GitHub, or emailing me at <a href="mailto:hvxdk1@nottingham.edu.cn">hvxdk1@nottingham.edu.cn</a>.
+
