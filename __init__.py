@@ -184,7 +184,7 @@ class AnkiPADialog(QDialog):
                 html += line
 
         # Generate statistics data
-        stats_data = stats.get_stats_data()
+        stats_data = stats
         days = sorted(
             list(stats_data.keys()),
             key=lambda d: time.strptime(d, "%d/%m/%Y"),
@@ -256,7 +256,7 @@ class AnkiPADialog(QDialog):
         buttons = QDialogButtonBox()
         contact_btn = QPushButton("Contact author")
         contact_btn.clicked.connect(
-            lambda: QDesktopServices.openUrl(QUrl("https://github.com/warleysr/ankipa"))
+            lambda: QDesktopServices.openUrl(QUrl("https://github.com/DavidJohnKelly/ankipa_local"))
         )
         buttons.addButton("Ok", QDialogButtonBox.ButtonRole.AcceptRole)
         buttons.addButton(contact_btn, QDialogButtonBox.ButtonRole.ActionRole)

@@ -1,4 +1,3 @@
-# pronunciation.py
 import json
 import wave
 import os
@@ -60,8 +59,7 @@ def _tokenize(text: str):
 
 def pron_assess(reference_text, recorded_voice):
     """
-    Local pronunciation assessment (Vosk + g2p_en + rapidfuzz).
-    Azure parameters are ignored but kept for compatibility.
+    Local pronunciation assessment.
     """
 
     if Model is None or G2p is None or fuzz is None:

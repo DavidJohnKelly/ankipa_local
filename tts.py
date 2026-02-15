@@ -11,10 +11,8 @@ class TTS:
     def gen_tts_audio(cls, text: Optional[str]) -> str:
         """
         Generate TTS audio offline using pyttsx3.
-        Ignores any Azure parameters.
 
         Args:
-            voice_code: Optional substring of the voice ID to select a specific voice.
             text: The text to convert to speech.
 
         Returns:
@@ -31,9 +29,8 @@ class TTS:
         # Initialize TTS engine
         engine = pyttsx3.init()
 
-        # Get voices safely
+        # Get voices and select English voice if available
         voices = list(engine.getProperty("voices") or [])
-        # Get first English voice if available, otherwise use default
         voice_code = next((v.id for v in voices if "en" in v.id.lower()), voices[0].id)
 
         if voice_code:
