@@ -48,7 +48,7 @@ def _ensure_wav_16k_mono(src_path: str) -> str:
     return tmp_path
 
 
-def _tokenize(text: str):
+def _tokenise(text: str):
     return [
         t for t in "".join(
             c if c.isalnum() or c.isspace() else " " for c in text
@@ -59,12 +59,11 @@ def _tokenize(text: str):
 
 def pron_assess(reference_text, recorded_voice):
     """
-    Local pronunciation assessment.
+    Local pronunciation assessment using:
+    - Vosk for speech recognition
+    - grapheme to phoneme conversion for better matching
+    - phoneme edit distance scoring
     """
-
-    if Model is None or G2p is None or fuzz is None:
-        AnkiPA.RESULT = None
-        return
 
     if not os.path.isdir(MODEL_PATH):
         print(f"Vosk model not found: {MODEL_PATH}")
@@ -80,15 +79,15 @@ def pron_assess(reference_text, recorded_voice):
         rec = KaldiRecognizer(_VOSK_MODEL, 16000.0)
         rec.SetWords(True)
 
-        recognized = []
+        recognised = []
         with wave.open(wav_path, "rb") as wf:
             while True:
                 data = wf.readframes(4000)
                 if not data:
                     break
                 if rec.AcceptWaveform(data):
-                    recognized.extend(json.loads(rec.Result()).get("result", []))
-            recognized.extend(json.loads(rec.FinalResult()).get("result", []))
+                    recognised.extend(json.loads(rec.Result()).get("result", []))
+            recognised.extend(json.loads(rec.FinalResult()).get("result", []))
 
     except Exception as e:
         print(f"Local pronunciation failed: {e}")
@@ -101,17 +100,20 @@ def pron_assess(reference_text, recorded_voice):
             pass
 
     g2p = G2p()
-    ref_words = _tokenize(reference_text)
+
+    ref_words = _tokenise(reference_text)
+    rec_words = [r["word"] for r in recognised]
+
+    rec_starts = [r.get("start", 0.0) for r in recognised]
+    rec_ends = [r.get("end", 0.0) for r in recognised]
+
     ref_phones = {
-        w: " ".join(p for p in g2p(w) if p.strip())
+        w: [p for p in g2p(w) if p.strip()]
         for w in ref_words
     }
 
-    rec_words = [r["word"] for r in recognized]
-    rec_starts = [r.get("start", 0.0) for r in recognized]
-    rec_ends = [r.get("end", 0.0) for r in recognized]
-
     sm = difflib.SequenceMatcher(a=ref_words, b=rec_words)
+
     words_out = []
 
     for tag, i1, i2, j1, j2 in sm.get_opcodes():
@@ -119,14 +121,27 @@ def pron_assess(reference_text, recorded_voice):
             for ri, rj in zip(range(i1, i2), range(j1, j2)):
                 ref = ref_words[ri]
                 rec = rec_words[rj]
-                phone_sim = fuzz.ratio(ref_phones[ref], " ".join(g2p(rec)))
+
+                ref_ph = ref_phones.get(ref, [])
+                rec_ph = [p for p in g2p(rec) if p.strip()]
+
+                # Phoneme edit distance
+                if ref_ph or rec_ph:
+                    dist = sum(
+                        1 for a, b in zip(ref_ph, rec_ph) if a != b
+                    ) + abs(len(ref_ph) - len(rec_ph))
+
+                    max_len = max(len(ref_ph), len(rec_ph))
+                    phone_sim = 100 * (1 - dist / max_len) if max_len else 0
+                else:
+                    phone_sim = 0
+
                 orth_sim = fuzz.ratio(ref.lower(), rec.lower())
-                score = int(round(0.6 * orth_sim + 0.4 * phone_sim))
+                score = int(round(0.7 * phone_sim + 0.3 * orth_sim))
                 words_out.append({
                     "Word": rec,
                     "ErrorType": "None" if score >= 60 else "Mispronunciation",
                     "AccuracyScore": score,
-                    "Syllables": [],
                 })
 
         elif tag == "replace":
@@ -135,7 +150,6 @@ def pron_assess(reference_text, recorded_voice):
                     "Word": rec_words[rj],
                     "ErrorType": "Mispronunciation",
                     "AccuracyScore": 0,
-                    "Syllables": [],
                 })
 
         elif tag == "delete":
@@ -144,7 +158,6 @@ def pron_assess(reference_text, recorded_voice):
                     "Word": ref_words[ri],
                     "ErrorType": "Omission",
                     "AccuracyScore": 0,
-                    "Syllables": [],
                 })
 
         elif tag == "insert":
@@ -153,12 +166,13 @@ def pron_assess(reference_text, recorded_voice):
                     "Word": rec_words[rj],
                     "ErrorType": "Insertion",
                     "AccuracyScore": 0,
-                    "Syllables": [],
                 })
 
     scores = [w["AccuracyScore"] for w in words_out]
+
     accuracy = round(sum(scores) / len(scores), 2) if scores else 0.0
 
+    # fluency estimate from speaking rate
     if rec_starts and rec_ends:
         duration = max(rec_ends) - min(rec_starts)
         wps = len(rec_words) / duration if duration > 0 else 0
@@ -166,7 +180,8 @@ def pron_assess(reference_text, recorded_voice):
     else:
         fluency = 0.0
 
-    pron_score = round(0.7 * accuracy + 0.3 * fluency, 2)
+    pron_score = round(0.8 * accuracy + 0.2 * fluency, 2)
+    pron_score = max(pron_score, 20) # min score of 20 to prevent demoralisation
 
     AnkiPA.RESULT = {
         "RecognitionStatus": "Success",
