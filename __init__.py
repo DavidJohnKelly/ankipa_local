@@ -127,7 +127,6 @@ class ResultsDialog(QDialog):
     def replay_tts(self):
         self.update_audio_speed()
         if AnkiPA.TTS_GEN is None:
-            # Generate TTS audio using the updated pyttsx3-only function
             generated = TTS.gen_tts_audio(text=AnkiPA.REFTEXT)
 
             if not generated:

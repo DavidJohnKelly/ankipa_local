@@ -18,6 +18,7 @@ MODEL_PATH = os.path.join(
 )
 
 _VOSK_MODEL = None
+_G2P = None
 
 
 def _ensure_wav_16k_mono(src_path: str) -> str:
@@ -74,6 +75,7 @@ def pron_assess(reference_text, recorded_voice):
     if _VOSK_MODEL is None:
         _VOSK_MODEL = Model(MODEL_PATH)
 
+    wav_path = None
     try:
         wav_path = _ensure_wav_16k_mono(recorded_voice)
         rec = KaldiRecognizer(_VOSK_MODEL, 16000.0)
@@ -99,16 +101,19 @@ def pron_assess(reference_text, recorded_voice):
         except Exception:
             pass
 
-    g2p = G2p()
+    global _G2P
+    if _G2P is None:
+        _G2P = G2p()
 
     ref_words = _tokenise(reference_text)
     rec_words = [r["word"] for r in recognised]
+    recognized_text = " ".join(rec_words)
 
     rec_starts = [r.get("start", 0.0) for r in recognised]
     rec_ends = [r.get("end", 0.0) for r in recognised]
 
     ref_phones = {
-        w: [p for p in g2p(w) if p.strip()]
+        w: [p for p in _G2P(w) if p.strip()]
         for w in ref_words
     }
 
@@ -123,7 +128,7 @@ def pron_assess(reference_text, recorded_voice):
                 rec = rec_words[rj]
 
                 ref_ph = ref_phones.get(ref, [])
-                rec_ph = [p for p in g2p(rec) if p.strip()]
+                rec_ph = [p for p in _G2P(rec) if p.strip()]
 
                 # Phoneme edit distance
                 if ref_ph or rec_ph:
@@ -185,6 +190,7 @@ def pron_assess(reference_text, recorded_voice):
 
     AnkiPA.RESULT = {
         "RecognitionStatus": "Success",
+        "Transcript": recognized_text,
         "NBest": [{
             "AccuracyScore": accuracy,
             "FluencyScore": fluency,

@@ -1,21 +1,25 @@
-from typing import Optional
-from aqt.sound import RecordDialog
-from aqt import mw
-from aqt.qt import Qt
-from .stats import update_stat, update_avg_stat, save_stats
-from .templates.loader import load_template
-import threading
 import re
+import time
+import wave
+import threading
+from typing import Optional
+
+from aqt import mw
+from aqt.sound import RecordDialog
+from aqt.qt import Qt
+
+from .stats import get_stat, log_assessment, update_stat, update_avg_stat, save_stats
+from .templates.loader import load_template
 
 
 # Regex to clean HTML and tags
-REMOVE_HTML_RE = re.compile(r"<[^<]+?>")
-REMOVE_TAG_RE = re.compile(r"\[[^\]]+\]")
+_REMOVE_HTML_RE = re.compile(r"<[^<]+?>")
+_REMOVE_TAG_RE = re.compile(r"\[[^\]]+\]")
 
 # Load templates
-WORD_HTML: str = load_template("word.html")
-RESULT_HTML: str = load_template("result.html")
-NETWORK_ERROR_HTML: str = load_template("network_error.html")
+_WORD_HTML: str = load_template("word.html")
+_RESULT_HTML: str = load_template("result.html")
+_NETWORK_ERROR_HTML: str = load_template("network_error.html")
 
 class AnkiPA:
     REFTEXT: Optional[str] = None
@@ -32,11 +36,12 @@ class AnkiPA:
 
         # Use first field by default
         field = mw.col.models.field_names(mw.reviewer.card.note().note_type())[0]
+        cls.FIELD = field
         to_read = mw.reviewer.card.note()[field]
 
         # Clean HTML and tags
-        to_read = re.sub(REMOVE_HTML_RE, " ", to_read)
-        to_read = re.sub(REMOVE_TAG_RE, "", to_read).strip()
+        to_read = re.sub(_REMOVE_HTML_RE, " ", to_read)
+        to_read = re.sub(_REMOVE_TAG_RE, "", to_read).strip()
 
         cls.REFTEXT = to_read
         cls.DIAG = RecordDialog(mw, mw, cls.after_record)
@@ -62,8 +67,8 @@ class AnkiPA:
         t.join()
 
         if cls.RESULT is None:
-            # Network error template (used for offline fallback too)
-            mw.taskman.run_on_main(lambda: mw.reviewer.web.eval(NETWORK_ERROR_HTML))
+            # Network error template
+            mw.taskman.run_on_main(lambda: mw.reviewer.web.eval(_NETWORK_ERROR_HTML))
             return
 
         scores = cls.RESULT["NBest"][0]
@@ -73,13 +78,14 @@ class AnkiPA:
 
         # Update stats
         update_stat("assessments", 1)
-        update_avg_stat("avg_accuracy", accuracy, 1)
-        update_avg_stat("avg_fluency", fluency, 1)
-        update_avg_stat("avg_pronunciation", pronunciation, 1)
-        save_stats()
+        current_assessments = get_stat("assessments")
+        
+        update_avg_stat("avg_accuracy", accuracy, current_assessments)
+        update_avg_stat("avg_fluency", fluency, current_assessments)
+        update_avg_stat("avg_pronunciation", pronunciation, current_assessments)
 
         # Prepare result HTML
-        html = RESULT_HTML.replace("[ACCURACY]", str(int(accuracy)))
+        html = _RESULT_HTML.replace("[ACCURACY]", str(int(accuracy)))
         html = html.replace("[FLUENCY]", str(int(fluency)))
         html = html.replace("[PRONUNCIATION]", str(int(pronunciation)))
 
@@ -95,7 +101,6 @@ class AnkiPA:
             syllables = ""
             if "Syllables" in word and isinstance(word["Syllables"], list):
                 for i, syllable in enumerate(word["Syllables"]):
-                    syllable_score = syllable.get("AccuracyScore", 0)
                     add = " &#x2022; " if i < (len(word["Syllables"]) - 1) else ""
                     syllables += (
                         f"<span style='color: black;'>{syllable.get('Syllable', '')}</span>"
@@ -104,7 +109,7 @@ class AnkiPA:
 
             error = word.get("ErrorType", "None")
             words_html += (
-                WORD_HTML.replace("[WORD]", word.get("Word", ""))
+                _WORD_HTML.replace("[WORD]", word.get("Word", ""))
                 .replace("[SYLLABLES]", syllables)
                 .replace("[ERROR]", error)
                 .replace("[ERROR-INFO]", error if error != "None" else "Correct")
@@ -117,6 +122,53 @@ class AnkiPA:
         html = html.replace("[MISPRONUNCIATIONS]", str(errors["Mispronunciation"]))
         html = html.replace("[OMISSIONS]", str(errors["Omission"]))
         html = html.replace("[INSERTIONS]", str(errors["Insertion"]))
+
+        # Log the assessment for later analysis
+        try:
+            with wave.open(recorded_voice, "rb") as wf:
+                audio_length = wf.getnframes() / float(wf.getframerate())
+        except Exception:
+            audio_length = 0.0
+
+        recognized_text = cls.RESULT.get("Transcript") or ""
+
+        # Some card metadata for traceability
+        note = mw.reviewer.card.note() if mw.reviewer.card else None
+        card = mw.reviewer.card
+        note_id = getattr(note, "id", -1)
+        card_id = getattr(card, "id", -1)
+        field_name = getattr(cls, "FIELD", "")
+        deck_name = ""
+        try:
+            deck_name = mw.col.decks.name(card.did) if card else ""
+        except Exception:
+            deck_name = ""
+        reps = getattr(card, "reps", 0)
+        interval = getattr(card, "ivl", 0)
+
+        # record an entry in stats.json so it is easy to
+        # inspect progress over time.
+        log_assessment({
+            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"),
+            "note_id": note_id,
+            "card_id": card_id,
+            "deck_name": deck_name,
+            "field_name": field_name,
+            "target_text": cls.REFTEXT,
+            "recognized_text": recognized_text,
+            "accuracy": accuracy,
+            "fluency": fluency,
+            "pronunciation_score": pronunciation,
+            "audio_length": audio_length,
+            "words_count": len(words_list),
+            "mispronunciations": errors["Mispronunciation"],
+            "omissions": errors["Omission"],
+            "insertions": errors["Insertion"],
+            "reps": reps,
+            "interval": interval,
+        })
+
+        save_stats()
 
         # Clear RESULT to prevent reuse
         cls.RESULT = None
