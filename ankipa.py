@@ -152,27 +152,30 @@ class AnkiPA:
 
         # record an entry in stats.json so it is easy to
         # inspect progress over time.
-        log_assessment({
-            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"),
-            "note_id": note_id,
-            "card_id": card_id,
-            "deck_name": deck_name,
-            "field_name": field_name,
-            "target_text": cls.REFTEXT,
-            "recognized_text": recognized_text,
-            "accuracy": accuracy,
-            "fluency": fluency,
-            "pronunciation_score": pronunciation,
-            "audio_length": audio_length,
-            "words_count": len(words_list),
-            "mispronunciations": errors["Mispronunciation"],
-            "omissions": errors["Omission"],
-            "insertions": errors["Insertion"],
-            "reps": reps,
-            "interval": interval,
-        })
+        try:
+            log_assessment({
+                "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"),
+                "note_id": note_id,
+                "card_id": card_id,
+                "deck_name": deck_name,
+                "field_name": field_name,
+                "target_text": cls.REFTEXT,
+                "recognized_text": recognized_text,
+                "accuracy": accuracy,
+                "fluency": fluency,
+                "pronunciation_score": pronunciation,
+                "audio_length": audio_length,
+                "words_count": len(words_list),
+                "mispronunciations": errors["Mispronunciation"],
+                "omissions": errors["Omission"],
+                "insertions": errors["Insertion"],
+                "reps": reps,
+                "interval": interval,
+            })
 
-        save_stats()
+            save_stats()
+        except Exception as e:
+            print(f"Error logging assessment: {e}")
 
         # Clear RESULT to prevent reuse
         cls.RESULT = None

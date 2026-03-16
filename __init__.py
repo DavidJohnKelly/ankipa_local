@@ -181,9 +181,8 @@ class AnkiPADialog(QDialog):
             for line in fp.readlines():
                 html += line
 
-        # Generate statistics data
-        stats_data = load_stats(addon)
-        print(stats_data)
+        # Get statistics data
+        stats_data = load_stats()
         days = sorted(
             list(stats_data.keys()),
             key=lambda d: time.strptime(d, "%d/%m/%Y"),

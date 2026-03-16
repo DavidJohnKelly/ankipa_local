@@ -3,19 +3,18 @@ import time
 import os
 
 _stats = dict()
-addonpath = None
+_addonpath = os.path.dirname(os.path.abspath(__file__))
 
 
-def load_stats(addon) -> dict:
-    global _stats, addonpath
-    addonpath = addon
+def load_stats() -> dict:
+    global _stats, _addonpath
 
-    path = os.path.join(addon, "stats.json")
+    path = os.path.join(_addonpath, "stats.json")
 
     try:
         with open(path, "r") as fp:
             _stats = json.load(fp)
-    except FileNotFoundError:
+    except (FileNotFoundError, json.JSONDecodeError):
         _stats = dict()
     
     return _stats
@@ -88,9 +87,23 @@ def update_avg_stat(key: str, new_score: float, assessments: float):
 
 
 def save_stats():
-    if not addonpath:
+    if not _addonpath:
         print("Addon path not set; cannot save stats.")
         return
     
-    with open(os.path.join(addonpath, "stats.json"), "w+") as fp:
-        json.dump(_stats, fp, indent=4)
+    final_path = os.path.join(_addonpath, "stats.json")
+    tmp_path = final_path + ".tmp"
+    
+    try:
+        # atomic write to prevent JSON corruption
+        with open(tmp_path, "w", encoding="utf-8") as fp:
+            json.dump(_stats, fp, indent=4)
+            
+        os.replace(tmp_path, final_path)
+    except Exception as e:
+        print(f"Failed to save stats: {e}")
+        if os.path.exists(tmp_path):
+            try:
+                os.remove(tmp_path)
+            except OSError:
+                pass
