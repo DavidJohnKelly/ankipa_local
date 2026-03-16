@@ -130,6 +130,10 @@ class AnkiPA:
         except Exception:
             audio_length = 0.0
 
+        # Update cumulative stats
+        update_stat("pronunciation_time", audio_length)
+        update_stat("words", len(words_list))
+
         recognized_text = cls.RESULT.get("Transcript") or ""
 
         # Some card metadata for traceability

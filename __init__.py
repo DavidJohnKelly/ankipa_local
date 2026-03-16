@@ -27,7 +27,7 @@ from .tts import TTS
 from .ankipa import AnkiPA
 
 import nltk
-from .stats import load_stats, stats
+from .stats import load_stats
 from .templates.loader import load_template
 
 NLTK_DATA = os.path.join(ADDON_DIR, "nltk_data")
@@ -40,7 +40,6 @@ app_settings = QSettings(SETTINGS_ORGANIZATION, SETTINGS_APPLICATION)
 
 # Load statistics
 addon = os.path.dirname(os.path.abspath(__file__))
-load_stats(addon)
 
 # Remove temporary files
 shutil.rmtree(tempfile.gettempdir() + os.sep + "ankipa", ignore_errors=True)
@@ -183,7 +182,8 @@ class AnkiPADialog(QDialog):
                 html += line
 
         # Generate statistics data
-        stats_data = stats
+        stats_data = load_stats(addon)
+        print(stats_data)
         days = sorted(
             list(stats_data.keys()),
             key=lambda d: time.strptime(d, "%d/%m/%Y"),
