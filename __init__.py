@@ -7,10 +7,8 @@ from aqt.sound import play, MpvManager, av_player
 import tempfile
 import time
 import shutil
-import json
 import os
 import sys
-import platform
 
 # Add vendor directory to path
 ADDON_DIR = os.path.dirname(__file__)
@@ -27,7 +25,7 @@ from .tts import TTS
 from .ankipa import AnkiPA
 
 import nltk
-from .stats import load_stats
+from .stats import get_stats
 from .templates.loader import load_template
 
 NLTK_DATA = os.path.join(ADDON_DIR, "nltk_data")
@@ -38,7 +36,7 @@ SETTINGS_APPLICATION = "ankipa_local"
 
 app_settings = QSettings(SETTINGS_ORGANIZATION, SETTINGS_APPLICATION)
 
-# Load statistics
+# Get addon path
 addon = os.path.dirname(os.path.abspath(__file__))
 
 # Remove temporary files
@@ -182,7 +180,7 @@ class AnkiPADialog(QDialog):
                 html += line
 
         # Get statistics data
-        stats_data = load_stats()
+        stats_data = get_stats()
         days = sorted(
             list(stats_data.keys()),
             key=lambda d: time.strptime(d, "%d/%m/%Y"),
