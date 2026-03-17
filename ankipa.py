@@ -68,7 +68,7 @@ class AnkiPA:
 
         if cls.RESULT is None:
             # Network error template
-            mw.taskman.run_on_main(lambda: mw.reviewer.web.eval(_NETWORK_ERROR_HTML))
+            mw.taskman.run_on_main(lambda: mw.reviewer.web.setHtml(_NETWORK_ERROR_HTML))
             return
 
         scores = cls.RESULT["NBest"][0]

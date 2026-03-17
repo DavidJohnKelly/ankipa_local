@@ -180,7 +180,7 @@ class AnkiPADialog(QDialog):
 
     def statistics_dialog(self):
         html = ""
-        with open(os.path.join(addon, f"chart{os.sep}chart.html"), "r") as fp:
+        with open(os.path.join(addon, f"chart{os.sep}chart.html"), "r", encoding="utf-8") as fp:
             for line in fp.readlines():
                 html += line
 

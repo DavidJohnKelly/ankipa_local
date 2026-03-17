@@ -97,8 +97,10 @@ def pron_assess(reference_text, recorded_voice):
         return
     finally:
         try:
-            os.unlink(wav_path)
+            if wav_path and os.path.exists(wav_path):
+                os.unlink(wav_path)
         except Exception:
+            print("Failed to clean up temporary WAV file")
             pass
 
     global _G2P
