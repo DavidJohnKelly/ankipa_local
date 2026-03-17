@@ -1,7 +1,7 @@
 from aqt import mw, gui_hooks
 from aqt.webview import AnkiWebView, WebContent
 from aqt.utils import showInfo
-from aqt.qt import QSettings, QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QSlider, Qt, QLabel, QDialogButtonBox, QFont, QShortcut, QKeySequence, QAction, QDesktopServices, QUrl, QTextEdit, QWidget, QSize, QIcon, QPixmap
+from aqt.qt import QSettings, QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QSlider, Qt, QLabel, QDialogButtonBox, QFont, QShortcut, QKeySequence, QAction, QDesktopServices, QUrl, QTextEdit, QWidget, QSize, QIcon, QPixmap, QFileDialog
 from aqt.sound import play, MpvManager, av_player
 
 import tempfile
@@ -165,9 +165,14 @@ class AnkiPADialog(QDialog):
         self.about_btn.setIcon(QIcon(os.path.join(addon, f"icons{os.sep}about.png")))
         self.about_btn.setIconSize(QSize(32, 32))
 
+        # Export Stats
+        self.export_stats_btn = QPushButton("Export Stats", self)
+        self.export_stats_btn.clicked.connect(self.export_stats)
+
         self.base_layout.addWidget(self.ankipa_label)
         self.base_layout.addWidget(self.statistics_btn)
         self.base_layout.addWidget(self.about_btn)
+        self.base_layout.addWidget(self.export_stats_btn)
 
         self.setLayout(self.base_layout)
 
@@ -267,6 +272,13 @@ class AnkiPADialog(QDialog):
         dialog.setLayout(layout)
 
         dialog.show()
+
+    def export_stats(self):
+        file_path, _ = QFileDialog.getSaveFileName(self, "Save Stats", "", "JSON Files (*.json)")
+        if file_path:
+            import shutil
+            shutil.copy(os.path.join(addon, "stats.json"), file_path)
+            showInfo("Stats exported successfully!")
 
 
 class StatisticsDialog(QDialog):
