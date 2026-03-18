@@ -56,7 +56,4 @@ src/testTestingRootWkspc/coverageWorkspace/.coverage
 *.txt
 *.bat
 *.original
-models/
 vendor/
-nltk_data/
-stats.json
