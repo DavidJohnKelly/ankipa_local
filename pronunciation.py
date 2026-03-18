@@ -2,13 +2,16 @@ import json
 import wave
 import os
 import tempfile
-import audioop
 import difflib
 
-from .ankipa import AnkiPA
+import numpy as np
+
 from vosk import Model, KaldiRecognizer
 from g2p_en import G2p
 from rapidfuzz import fuzz
+from scipy import signal
+
+from .ankipa import AnkiPA
 
 
 MODEL_PATH = os.path.join(
@@ -27,14 +30,31 @@ def _ensure_wav_16k_mono(src_path: str) -> str:
         nchannels, sampwidth, framerate, nframes, _, _ = w.getparams()
         frames = w.readframes(nframes)
 
+    # Convert bytes to numpy array
+    audio_data = np.frombuffer(frames, dtype=np.int16 if sampwidth == 2 else np.int8)
+    
+    # Convert to mono if stereo
     if nchannels > 1:
-        frames = audioop.tomono(frames, sampwidth, 1, 0)
-
+        audio_data = audio_data.reshape(-1, nchannels)
+        audio_data = np.mean(audio_data, axis=1).astype(np.int16)
+    
+    # Resample to 16kHz if needed
     if framerate != 16000:
-        frames, _ = audioop.ratecv(frames, sampwidth, 1, framerate, 16000, None)
-
+        num_samples = int(len(audio_data) * 16000 / framerate)
+        audio_data = signal.resample(audio_data, num_samples).astype(np.int16)
+    
+    # Ensure 16-bit (2 bytes per sample)
     if sampwidth != 2:
-        frames = audioop.lin2lin(frames, sampwidth, 2)
+        if sampwidth == 1:
+            # 8-bit to 16-bit
+            audio_data = (audio_data.astype(np.int16) - 128) * 256
+        else:
+            # Adjust to 16-bit
+            bits_needed = 16 - (sampwidth * 8)
+            if bits_needed > 0:
+                audio_data = audio_data.astype(np.int16) << bits_needed
+            else:
+                audio_data = (audio_data.astype(np.int32) >> -bits_needed).astype(np.int16)
 
     tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
     tmp_path = tmp.name
@@ -44,7 +64,7 @@ def _ensure_wav_16k_mono(src_path: str) -> str:
         w.setnchannels(1)
         w.setsampwidth(2)
         w.setframerate(16000)
-        w.writeframes(frames)
+        w.writeframes(audio_data.tobytes())
 
     return tmp_path
 

@@ -4,32 +4,25 @@ from aqt.utils import showInfo
 from aqt.qt import QSettings, QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QSlider, Qt, QLabel, QDialogButtonBox, QFont, QShortcut, QKeySequence, QAction, QDesktopServices, QUrl, QTextEdit, QWidget, QSize, QIcon, QPixmap, QFileDialog
 from aqt.sound import play, MpvManager, av_player
 
+from .bootstrapper import ensure_dependencies
+
 import tempfile
 import time
 import shutil
 import os
-import sys
 
-# Add vendor directory to path
-ADDON_DIR = os.path.dirname(__file__)
-VENDOR_DIR = os.path.join(ADDON_DIR, "vendor")
+ensure_dependencies()  # Ensure dependencies are installed before anything else
 
 _FONT_HEADER = QFont()
 _FONT_HEADER.setPointSize(12)
 _FONT_HEADER.setBold(True)
 
-if VENDOR_DIR not in sys.path:
-    sys.path.insert(0, VENDOR_DIR)
-
 from .tts import TTS
 from .ankipa import AnkiPA
 
-import nltk
 from .stats import get_stats
 from .templates.loader import load_template
 
-NLTK_DATA = os.path.join(ADDON_DIR, "nltk_data")
-nltk.data.path.insert(0, NLTK_DATA)
 
 SETTINGS_ORGANIZATION = "github_davidjohnkelly"
 SETTINGS_APPLICATION = "ankipa_local"
