@@ -13,6 +13,13 @@ import os
 
 ensure_dependencies()  # Ensure dependencies are installed before anything else
 
+# Pre-warm local pronunciation engine so first recording does not fail
+try:
+    from .pronunciation import init_pronunciation_engine
+    init_pronunciation_engine()
+except Exception as e:
+    print(f"[AnkiPA] Warning: pronunciation engine pre-initialization failed: {e}")
+
 _FONT_HEADER = QFont()
 _FONT_HEADER.setPointSize(12)
 _FONT_HEADER.setBold(True)

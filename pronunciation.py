@@ -24,6 +24,19 @@ _VOSK_MODEL = None
 _G2P = None
 
 
+def init_pronunciation_engine():
+    """Initialize Vosk and G2P once. Raise on failure."""
+    global _VOSK_MODEL, _G2P
+
+    if _VOSK_MODEL is None:
+        if not os.path.isdir(MODEL_PATH):
+            raise FileNotFoundError(f"Vosk model directory not found: {MODEL_PATH}")
+        _VOSK_MODEL = Model(MODEL_PATH)
+
+    if _G2P is None:
+        _G2P = G2p()
+
+
 def _ensure_wav_16k_mono(src_path: str) -> str:
     """Return path to a WAV file that is 16kHz mono 16-bit PCM."""
     with wave.open(src_path, "rb") as w:
@@ -86,14 +99,12 @@ def pron_assess(reference_text, recorded_voice):
     - phoneme edit distance scoring
     """
 
-    if not os.path.isdir(MODEL_PATH):
-        print(f"Vosk model not found: {MODEL_PATH}")
-        AnkiPA.RESULT = None
+    try:
+        init_pronunciation_engine()
+    except Exception as e:
+        print(f"Local pronunciation initialization failed: {e}")
+        AnkiPA.RESULT = {"error": "Local speech engine initialization failed. Please restart Anki."}
         return
-
-    global _VOSK_MODEL
-    if _VOSK_MODEL is None:
-        _VOSK_MODEL = Model(MODEL_PATH)
 
     wav_path = None
     try:

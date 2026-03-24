@@ -19,7 +19,7 @@ _REMOVE_TAG_RE = re.compile(r"\[[^\]]+\]")
 # Load templates
 _WORD_HTML: str = load_template("word.html")
 _RESULT_HTML: str = load_template("result.html")
-_NETWORK_ERROR_HTML: str = load_template("network_error.html")
+_RECOGNITION_ERROR_HTML: str = load_template("recognition_error.html")
 
 class AnkiPA:
     REFTEXT: Optional[str] = None
@@ -66,9 +66,9 @@ class AnkiPA:
         t.start()
         t.join()
 
-        if cls.RESULT is None:
-            # Network error template
-            mw.taskman.run_on_main(lambda: mw.reviewer.web.setHtml(_NETWORK_ERROR_HTML))
+        if cls.RESULT is None or (isinstance(cls.RESULT, dict) and cls.RESULT.get("error")):
+            # Local recognition fallback screen
+            mw.taskman.run_on_main(lambda: mw.reviewer.web.setHtml(_RECOGNITION_ERROR_HTML))
             return
 
         scores = cls.RESULT["NBest"][0]
