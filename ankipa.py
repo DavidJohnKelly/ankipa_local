@@ -130,9 +130,12 @@ class AnkiPA:
         except Exception:
             audio_length = 0.0
 
+        # Count only correctly recognized words (no errors)
+        correct_words = sum(1 for word in words_list if word.get("ErrorType") == "None")
+        
         # Update cumulative stats
         update_stat("pronunciation_time", audio_length)
-        update_stat("words", len(words_list))
+        update_stat("words", correct_words)
 
         recognized_text = cls.RESULT.get("Transcript") or ""
 
@@ -165,7 +168,7 @@ class AnkiPA:
                 "fluency": fluency,
                 "pronunciation_score": pronunciation,
                 "audio_length": audio_length,
-                "words_count": len(words_list),
+                "words_count": correct_words,
                 "mispronunciations": errors["Mispronunciation"],
                 "omissions": errors["Omission"],
                 "insertions": errors["Insertion"],
