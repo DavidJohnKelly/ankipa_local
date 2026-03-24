@@ -138,9 +138,17 @@ def pron_assess(reference_text, recorded_voice):
     if _G2P is None:
         _G2P = G2p()
 
-    ref_words = _tokenise(reference_text)
-    rec_words = [r["word"] for r in recognised]
-    recognized_text = " ".join(rec_words)
+    # Normalise to lower case for case-insensitive matching
+    ref_words = [w.lower() for w in _tokenise(reference_text)]
+    rec_words = [r["word"].lower() for r in recognised]
+
+    # first word capitalised + standalone i upper-case
+    display_words = [r["word"] for r in recognised]
+    if display_words:
+        display_words[0] = display_words[0].capitalize()
+    display_words = ["I" if w.lower() == "i" else w for w in display_words]
+
+    recognized_text = " ".join(display_words)
 
     rec_starts = [r.get("start", 0.0) for r in recognised]
     rec_ends = [r.get("end", 0.0) for r in recognised]
@@ -177,7 +185,7 @@ def pron_assess(reference_text, recorded_voice):
                 orth_sim = fuzz.ratio(ref.lower(), rec.lower())
                 score = int(round(0.7 * phone_sim + 0.3 * orth_sim))
                 words_out.append({
-                    "Word": rec,
+                    "Word": display_words[rj],
                     "ErrorType": "None" if score >= 60 else "Mispronunciation",
                     "AccuracyScore": score,
                 })
@@ -185,7 +193,7 @@ def pron_assess(reference_text, recorded_voice):
         elif tag == "replace":
             for rj in range(j1, j2):
                 words_out.append({
-                    "Word": rec_words[rj],
+                    "Word": display_words[rj],
                     "ErrorType": "Mispronunciation",
                     "AccuracyScore": 0,
                 })
@@ -193,7 +201,7 @@ def pron_assess(reference_text, recorded_voice):
         elif tag == "delete":
             for ri in range(i1, i2):
                 words_out.append({
-                    "Word": ref_words[ri],
+                    "Word": display_words[ri],
                     "ErrorType": "Omission",
                     "AccuracyScore": 0,
                 })
@@ -201,7 +209,7 @@ def pron_assess(reference_text, recorded_voice):
         elif tag == "insert":
             for rj in range(j1, j2):
                 words_out.append({
-                    "Word": rec_words[rj],
+                    "Word": display_words[rj],
                     "ErrorType": "Insertion",
                     "AccuracyScore": 0,
                 })

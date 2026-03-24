@@ -66,10 +66,14 @@ class AnkiPA:
         t.start()
         t.join()
 
-        if cls.RESULT is None or (isinstance(cls.RESULT, dict) and cls.RESULT.get("error")):
+        if cls.RESULT is None:
+            msg = "Speech recognition failed. Local engine may be initializing; retry once."
+            mw.taskman.run_on_main(lambda: mw.reviewer.web.setHtml(f"<b>{msg}</b>"))
+            return
+
+        if isinstance(cls.RESULT, dict) and cls.RESULT.get("error"):
             # Local recognition fallback screen
             mw.taskman.run_on_main(lambda: mw.reviewer.web.setHtml(_RECOGNITION_ERROR_HTML))
-            return
 
         scores = cls.RESULT["NBest"][0]
         accuracy = scores.get("AccuracyScore", 0)
