@@ -139,7 +139,8 @@ def pron_assess(reference_text, recorded_voice):
         _G2P = G2p()
 
     # Normalise to lower case for case-insensitive matching
-    ref_words = [w.lower() for w in _tokenise(reference_text)]
+    orig_ref_words = _tokenise(reference_text)
+    ref_words = [w.lower() for w in orig_ref_words]
     rec_words = [r["word"].lower() for r in recognised]
 
     # first word capitalised + standalone i upper-case
@@ -201,7 +202,7 @@ def pron_assess(reference_text, recorded_voice):
         elif tag == "delete":
             for ri in range(i1, i2):
                 words_out.append({
-                    "Word": display_words[ri],
+                    "Word": orig_ref_words[ri],
                     "ErrorType": "Omission",
                     "AccuracyScore": 0,
                 })
