@@ -3,6 +3,5 @@
   "name": "AnkiPA: Local Pronunciation Assessment",
   "mod": 0,
   "conflicts": ["conflicting_addon_name"],
-  "min_point_version": 250900,
-  "max_point_version": -1
+  "min_point_version": 250900
 }
