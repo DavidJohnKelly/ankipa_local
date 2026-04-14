@@ -103,8 +103,9 @@ def pron_assess(reference_text, recorded_voice):
         init_pronunciation_engine()
     except Exception as e:
         print(f"Local pronunciation initialization failed: {e}")
-        AnkiPA.RESULT = {"error": "Local speech engine initialization failed. Please restart Anki."}
-        return
+        error_result = {"error": "Local speech engine initialization failed. Please restart Anki."}
+        AnkiPA.RESULT = error_result
+        return error_result
 
     wav_path = None
     try:
@@ -124,8 +125,7 @@ def pron_assess(reference_text, recorded_voice):
 
     except Exception as e:
         print(f"Local pronunciation failed: {e}")
-        AnkiPA.RESULT = None
-        return
+        return {"error": f"Speech recognition failed: {str(e)}"}
     finally:
         try:
             if wav_path and os.path.exists(wav_path):
@@ -230,7 +230,7 @@ def pron_assess(reference_text, recorded_voice):
     pron_score = round(0.8 * accuracy + 0.2 * fluency, 2)
     pron_score = max(pron_score, 20) # min score of 20 to prevent demoralisation
 
-    AnkiPA.RESULT = {
+    result = {
         "RecognitionStatus": "Success",
         "Transcript": recognized_text,
         "NBest": [{
@@ -240,3 +240,5 @@ def pron_assess(reference_text, recorded_voice):
             "Words": words_out,
         }],
     }
+    AnkiPA.RESULT = result
+    return result
