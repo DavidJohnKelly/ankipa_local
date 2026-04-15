@@ -57,7 +57,13 @@ class AnkiPA:
         cls.RESULT = None
 
         # Run pronunciation assessment in thread
-        from .pronunciation import pron_assess
+        try:
+            from .pronunciation import pron_assess
+        except Exception as e:
+            print(f"Pronunciation import failed: {e}")
+            cls.RESULT = {"error": "Local speech engine unavailable. Please restart Anki after installing dependencies."}
+            mw.taskman.run_on_main(lambda: mw.reviewer.web.setHtml(_RECOGNITION_ERROR_HTML))
+            return
 
         t = threading.Thread(
             target=pron_assess,
@@ -74,6 +80,10 @@ class AnkiPA:
         if isinstance(cls.RESULT, dict) and cls.RESULT.get("error"):
             # Local recognition fallback screen
             mw.taskman.run_on_main(lambda: mw.reviewer.web.setHtml(_RECOGNITION_ERROR_HTML))
+
+        if "NBest" not in cls.RESULT or not cls.RESULT["NBest"]:
+            print("No pronunciation result:", cls.RESULT)
+            return
 
         scores = cls.RESULT["NBest"][0]
         accuracy = scores.get("AccuracyScore", 0)

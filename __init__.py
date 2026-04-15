@@ -11,20 +11,31 @@ import time
 import shutil
 import os
 
-ensure_dependencies()  # Ensure dependencies are installed before anything else
+dependencies_ready = ensure_dependencies()  # Ensure dependencies are installed before anything else
 
-# Pre-warm local pronunciation engine so first recording does not fail
-try:
-    from .pronunciation import init_pronunciation_engine
-    init_pronunciation_engine()
-except Exception as e:
-    print(f"[AnkiPA] Warning: pronunciation engine pre-initialization failed: {e}")
+if dependencies_ready:
+    # Pre-warm local pronunciation engine so first recording does not fail
+    try:
+        from .pronunciation import init_pronunciation_engine
+        init_pronunciation_engine()
+    except Exception as e:
+        print(f"[AnkiPA] Warning: pronunciation engine pre-initialization failed: {e}")
+else:
+    print("[AnkiPA] Warning: dependencies were not installed; addon features may be limited.")
 
 _FONT_HEADER = QFont()
 _FONT_HEADER.setPointSize(12)
 _FONT_HEADER.setBold(True)
 
-from .tts import TTS
+if dependencies_ready:
+    try:
+        from .tts import TTS
+    except Exception as e:
+        TTS = None
+        print(f"[AnkiPA] Warning: failed to import TTS module: {e}")
+else:
+    TTS = None
+
 from .ankipa import AnkiPA
 
 from .stats import get_stats
@@ -123,6 +134,13 @@ class ResultsDialog(QDialog):
 
     def replay_tts(self):
         self.update_audio_speed()
+        if TTS is None:
+            showInfo(
+                "TTS is unavailable because AnkiPA dependencies did not load correctly.",
+                title="AnkiPA",
+            )
+            return
+
         if AnkiPA.TTS_GEN is None:
             generated = TTS.gen_tts_audio(text=AnkiPA.REFTEXT)
 

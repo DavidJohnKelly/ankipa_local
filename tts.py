@@ -31,9 +31,9 @@ class TTS:
 
         # Get voices and select English voice if available
         voices = list(engine.getProperty("voices") or [])
-        voice_code = next((v.id for v in voices if "en" in v.id.lower()), voices[0].id)
+        voice_code = next((v.id for v in voices if "en" in v.id.lower()), None)
 
-        if voice_code:
+        if voices and voice_code:
             matched = False
             for voice in voices:
                 if voice_code.lower() in voice.id.lower():
@@ -42,6 +42,8 @@ class TTS:
                     break
             if not matched:
                 print(f"Voice '{voice_code}' not found. Using default voice.")
+        elif not voices:
+            print("TTS engine returned no voices; using default voice settings.")
 
         # Save audio to file
         engine.save_to_file(text, tmp_path)
