@@ -7,10 +7,6 @@ from aqt.utils import showText, showInfo
 from aqt.qt import QProgressDialog, QApplication
 from aqt import mw
 
-def _setup_nltk_data(addon_dir):
-    import nltk
-    NLTK_DATA = os.path.join(addon_dir, "nltk_data")
-    nltk.data.path.insert(0, NLTK_DATA)
 
 def ensure_dependencies():
     addon_dir = os.path.dirname(__file__)
@@ -20,7 +16,7 @@ def ensure_dependencies():
     if vendor_dir not in sys.path:
         sys.path.insert(0, vendor_dir)
 
-    required_packages = ["pyttsx3", "vosk", "nltk", "g2p_en", "rapidfuzz", "scipy"] 
+    required_packages = ["pyttsx3", "vosk", "g2p_en", "rapidfuzz", "scipy"] 
     missing_packages = []
     
     # Check if packages are loadable
@@ -30,9 +26,8 @@ def ensure_dependencies():
         except ImportError:
             missing_packages.append(package)
     
-    # If everything is installed then setup nltk paths and exit
+    # If everything is installed then exit
     if not missing_packages:
-        _setup_nltk_data(addon_dir)
         return 
 
     os.makedirs(vendor_dir, exist_ok=True)
@@ -73,5 +68,3 @@ def ensure_dependencies():
     importlib.invalidate_caches()
     print("[AnkiPA] All dependencies installed successfully!")
     showInfo("AnkiPA setup complete! The addon is ready to use.", title="AnkiPA Ready")
-    # After packages are installed, setup nltk paths
-    _setup_nltk_data(addon_dir)
